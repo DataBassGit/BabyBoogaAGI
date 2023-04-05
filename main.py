@@ -3,6 +3,7 @@ import time
 from collections import deque
 from typing import Dict, List
 from oobabooga_api import generate_text
+from sentence_transformers import SentenceTransformer
 
 # Set API Keys
 PINECONE_API_KEY = ""
@@ -22,7 +23,7 @@ pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
 
 # Create Pinecone index
 table_name = YOUR_TABLE_NAME
-dimension = 1536
+dimension = 768
 metric = "cosine"
 pod_type = "p1"
 if table_name not in pinecone.list_indexes():
@@ -65,14 +66,15 @@ PARAMS = {
     'seed': -1,
 }
 
-
+model = SentenceTransformer('sentence-transformers/LaBSE')
 
 def add_task(task: Dict):
     task_list.append(task)
 
 def get_ada_embedding(text):
-    # Use oobabooga API to generate the text
-    return generate_text(text.replace("\n", " "), PARAMS)
+    # Get the embedding for the given text
+    embedding = model.encode([text])
+    return embedding[0]
 
 def task_creation_agent(
     objective: str, result: Dict, task_description: str, task_list: List[str]
@@ -119,7 +121,7 @@ def context_agent(query: str, index: str, n: int):
     query_embedding = get_ada_embedding(query)
     index = pinecone.Index(index_name=index)
     results = index.query(
-        query_embedding, top_k=n, include_metadata=True
+        query_embedding.tolist(), top_k=n, include_metadata=True
     )
     sorted_results = sorted(
         results.matches, key=lambda x: x.score, reverse=True
