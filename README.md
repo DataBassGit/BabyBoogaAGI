@@ -13,3 +13,6 @@ You need to modify the start-webui.bat to replace the server init with this line
 python server.py --auto-devices --listen --no-stream
 
 This change disables the web interface.
+
+
+You have to enter your pinecone API key in the main.py script. Your pinecone index dimensions must be 768.
