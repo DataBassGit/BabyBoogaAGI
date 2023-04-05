@@ -6,7 +6,7 @@ from oobabooga_api import generate_text
 
 # Set API Keys
 PINECONE_API_KEY = ""
-PINECONE_ENVIRONMENT = "us-east1-gcp"  # Pinecone Environment (e.g., "us-east1-gcp")
+PINECONE_ENVIRONMENT = "us-east4-gcp"  # Pinecone Environment (e.g., "us-east1-gcp")
 
 # Set Variables
 YOUR_TABLE_NAME = "test-table"
@@ -36,15 +36,43 @@ index = pinecone.Index(table_name)
 # Task list
 task_list = deque([])
 
+# Add your generation parameters
+PARAMS = {
+    'max_new_tokens': 200,
+    'temperature': 0.5,
+    'top_p': 0.9,
+    'typical_p': 1,
+    'n': 1,
+    'stop': None,
+    'do_sample': True,
+    'return_prompt': False,
+    'return_metadata': False,
+    'typical_p': 0.95,
+    'repetition_penalty': 1.05,
+    'encoder_repetition_penalty': 1.0,
+    'top_k': 0,
+    'min_length': 0,
+    'no_repeat_ngram_size': 2,
+    'num_beams': 1,
+    'penalty_alpha': 0,
+    'length_penalty': 1.0,
+    'early_stopping': False,
+    'pad_token_id': None,  # Padding token ID, if required
+    'eos_token_id': None,  # End-of-sentence token ID, if required
+    'use_cache': True,     # Whether to use caching
+    'num_return_sequences': 1,  # Number of sequences to return for each input
+    'bad_words_ids': None,  # List of token IDs that should not appear in the generated text
+    'seed': -1,
+}
+
+
 
 def add_task(task: Dict):
     task_list.append(task)
 
-
 def get_ada_embedding(text):
     # Use oobabooga API to generate the text
-    return generate_text(text.replace("\n", " "), params)
-
+    return generate_text(text.replace("\n", " "), PARAMS)
 
 def task_creation_agent(
     objective: str, result: Dict, task_description: str, task_list: List[str]
@@ -55,9 +83,8 @@ def task_creation_agent(
         f"These are incomplete tasks: {', '.join(task_list)}. "
         f"Based on the result, create new tasks to be completed by the AI system that do not overlap with incomplete tasks. Return the tasks as an array."
     )
-    new_tasks = generate_text(prompt, params).strip().split("\n")
+    new_tasks = generate_text(prompt, PARAMS).strip().split("\n")
     return [{"task_name": task_name} for task_name in new_tasks]
-
 
 def prioritization_agent(this_task_id: int):
     global task_list
@@ -70,7 +97,7 @@ def prioritization_agent(this_task_id: int):
     #. Second task
     Start the task list with number {next_task_id}."""
     )
-    new_tasks = generate_text(prompt, params).strip().split("\n")
+    new_tasks = generate_text(prompt, PARAMS).strip().split("\n")
     task_list = deque()
     for task_string in new_tasks:
         task_parts = task_string.strip().split(".", 1)
@@ -86,8 +113,7 @@ def execution_agent(objective: str, task: str) -> str:
         f"Take into account these previously completed tasks: {context}\n"
         f"Your task: {task}\nResponse:"
     )
-    return generate_text(prompt, params).strip()
-
+    return generate_text(prompt, PARAMS).strip()
 
 def context_agent(query: str, index: str, n: int):
     query_embedding = get_ada_embedding(query)
@@ -99,7 +125,6 @@ def context_agent(query: str, index: str, n: int):
         results.matches, key=lambda x: x.score, reverse=True
     )
     return [str(item.metadata["task"]) for item in sorted_results]
-
 
 # Add the first task
 first_task = {"task_id": 1, "task_name": YOUR_FIRST_TASK}
@@ -133,7 +158,7 @@ while True:
 
         # Step 2: Enrich result and store in Pinecone
         enriched_result = {"data": result}
-        result_id = f"result_{task["task_id"]}"
+        result_id = f'result_{task["task_id"]}'
         vector = enriched_result["data"]
         index.upsert(
             [
