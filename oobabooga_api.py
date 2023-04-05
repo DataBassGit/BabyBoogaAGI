@@ -24,6 +24,9 @@ def generate_text(prompt, params):
             params['seed']
         ]
     }).json()
+    
+    #debug
+    #print(response)
 
     reply = response["data"][0]
     return reply
