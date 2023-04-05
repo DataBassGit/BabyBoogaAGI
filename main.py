@@ -166,7 +166,7 @@ while True:
             [
                 (
                     result_id,
-                    get_ada_embedding(vector),
+                    get_ada_embedding(vector).tolist(),
                     {"task": task["task_name"], "result": result},
                 )
             ]
