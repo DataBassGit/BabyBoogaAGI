@@ -1,6 +1,10 @@
 # BabyBoogaAGI
 Porting BabyAGI to Oobabooba.
 
+Development of this project has moved to a new repo: https://github.com/DataBassGit/BigBoogaAGI
+
+The scope of the project has grown, and so the name has grown too.
+
 
 Original GPT-4 version:
 https://github.com/yoheinakajima/babyagi
