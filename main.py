@@ -39,10 +39,9 @@ task_list = deque([])
 
 # Add your generation parameters
 PARAMS = {
-    'max_new_tokens': 200,
+    'max_new_tokens': 800,
     'temperature': 0.5,
     'top_p': 0.9,
-    'typical_p': 1,
     'n': 1,
     'stop': None,
     'do_sample': True,
@@ -68,16 +67,19 @@ PARAMS = {
 
 model = SentenceTransformer('sentence-transformers/LaBSE')
 
+
 def add_task(task: Dict):
     task_list.append(task)
+
 
 def get_ada_embedding(text):
     # Get the embedding for the given text
     embedding = model.encode([text])
     return embedding[0]
 
+
 def task_creation_agent(
-    objective: str, result: Dict, task_description: str, task_list: List[str]
+        objective: str, result: Dict, task_description: str, task_list: List[str]
 ):
     prompt = (
         f"You are an task creation AI that uses the result of an execution agent to create new tasks with the following objective: {objective}, "
@@ -87,6 +89,7 @@ def task_creation_agent(
     )
     new_tasks = generate_text(prompt, PARAMS).strip().split("\n")
     return [{"task_name": task_name} for task_name in new_tasks]
+
 
 def prioritization_agent(this_task_id: int):
     global task_list
@@ -108,6 +111,7 @@ def prioritization_agent(this_task_id: int):
             task_name = task_parts[1].strip()
             task_list.append({"task_id": task_id, "task_name": task_name})
 
+
 def execution_agent(objective: str, task: str) -> str:
     context = context_agent(index=YOUR_TABLE_NAME, query=objective, n=5)
     prompt = (
@@ -116,6 +120,7 @@ def execution_agent(objective: str, task: str) -> str:
         f"Your task: {task}\nResponse:"
     )
     return generate_text(prompt, PARAMS).strip()
+
 
 def context_agent(query: str, index: str, n: int):
     query_embedding = get_ada_embedding(query)
@@ -127,6 +132,7 @@ def context_agent(query: str, index: str, n: int):
         results.matches, key=lambda x: x.score, reverse=True
     )
     return [str(item.metadata["task"]) for item in sorted_results]
+
 
 # Add the first task
 first_task = {"task_id": 1, "task_name": YOUR_FIRST_TASK}
@@ -184,4 +190,3 @@ while True:
     prioritization_agent(this_task_id)
 
     time.sleep(1)  # Sleep before checking the task list again
-
